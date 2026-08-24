@@ -5,6 +5,7 @@ import { createClient } from "@/lib/auth/server";
 import { prisma } from "@/lib/db/client";
 import { loginSchema } from "@/lib/validation/auth";
 import { dashboardPathForRole } from "@/lib/auth/current-user";
+import { recordAudit } from "@/lib/audit/log";
 
 export type LoginState = { error?: string };
 
@@ -34,6 +35,13 @@ export async function login(
     await supabase.auth.signOut();
     return { error: "This account is not authorized to sign in." };
   }
+
+  await recordAudit(prisma, {
+    userId: dbUser.id,
+    action: "LOGIN",
+    resourceType: "User",
+    resourceId: dbUser.id,
+  });
 
   redirect(dashboardPathForRole(dbUser.role));
 }
