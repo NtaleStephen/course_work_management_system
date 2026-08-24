@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/auth/middleware";
+import { updateSession } from "@/lib/auth/proxy";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   return await updateSession(request);
 }
 
