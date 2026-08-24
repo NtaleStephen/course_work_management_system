@@ -47,8 +47,6 @@ model User {
   ledGroup    Group?
   courseworks Coursework[]
   auditLogs   AuditLog[]
-
-  @@index([email])
 }
 
 model Course {
@@ -186,8 +184,6 @@ model Mark {
 
   submissionId String     @unique @db.Uuid
   submission   Submission @relation(fields: [submissionId], references: [id])
-
-  @@index([submissionId])
 }
 
 model AuditLog {
