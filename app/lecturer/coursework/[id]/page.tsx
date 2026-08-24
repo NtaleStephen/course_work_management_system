@@ -7,6 +7,10 @@ import { prisma } from "@/lib/db/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PublishCourseworkDialog } from "@/components/lecturer/publish-coursework-dialog";
+import {
+  SubmissionOverview,
+  type GroupSubmissionRow,
+} from "@/components/lecturer/submission-overview";
 
 export default async function CourseworkDetailPage({
   params,
@@ -30,8 +34,42 @@ export default async function CourseworkDetailPage({
 
   const isDraft = coursework.status === "DRAFT";
 
+  let submissionRows: GroupSubmissionRow[] = [];
+  if (!isDraft) {
+    // Not Submitted is never a stored list -- it's assigned groups minus
+    // groups that have a submission row (business-logic.md §24).
+    const submissions = await prisma.submission.findMany({
+      where: { courseworkId: id },
+      include: { mark: true },
+      orderBy: { version: "desc" },
+    });
+
+    const latestByGroup = new Map<string, (typeof submissions)[number]>();
+    for (const submission of submissions) {
+      if (!latestByGroup.has(submission.groupId)) {
+        latestByGroup.set(submission.groupId, submission);
+      }
+    }
+
+    submissionRows = coursework.assignedGroups.map((assignment) => {
+      const latest = latestByGroup.get(assignment.groupId);
+      return {
+        groupId: assignment.groupId,
+        groupName: assignment.group.name,
+        submission: latest
+          ? {
+              id: latest.id,
+              status: latest.status,
+              submittedAt: latest.submittedAt,
+              hasMark: latest.mark !== null,
+            }
+          : null,
+      };
+    });
+  }
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
@@ -94,17 +132,19 @@ export default async function CourseworkDetailPage({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">Groups</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">
+          {isDraft ? "Groups" : "Submissions"}
+        </h2>
         {coursework.assignedGroups.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No groups assigned.
-          </p>
-        ) : (
+          <p className="text-sm text-muted-foreground">No groups assigned.</p>
+        ) : isDraft ? (
           <ul className="space-y-1 text-sm text-foreground">
             {coursework.assignedGroups.map((assignment) => (
               <li key={assignment.id}>{assignment.group.name}</li>
             ))}
           </ul>
+        ) : (
+          <SubmissionOverview rows={submissionRows} />
         )}
       </div>
     </div>
