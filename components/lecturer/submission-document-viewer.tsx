@@ -6,12 +6,14 @@ import { DocxViewer } from "@/components/lecturer/docx-viewer";
 export function SubmissionDocumentViewer({
   url,
   mimeType,
+  className,
 }: {
   url: string;
   mimeType: string;
+  className?: string;
 }) {
   if (mimeType === "application/pdf") {
-    return <PdfViewer url={url} />;
+    return <PdfViewer url={url} className={className} />;
   }
-  return <DocxViewer url={url} />;
+  return <DocxViewer url={url} className={className} />;
 }

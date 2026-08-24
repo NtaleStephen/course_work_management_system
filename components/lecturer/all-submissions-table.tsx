@@ -11,37 +11,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SubmissionStatusBadge } from "@/components/shared/submission-status-badge";
+import type { DerivedSubmissionStatus } from "@/lib/submission-status";
 
 export type AllSubmissionsRow = {
   key: string;
   courseworkTitle: string;
   courseName: string;
   groupName: string;
-  status: "NOT_SUBMITTED" | "SUBMITTED" | "LATE";
+  status: DerivedSubmissionStatus;
   submissionId?: string;
 };
 
-function statusBadge(status: AllSubmissionsRow["status"]) {
-  if (status === "NOT_SUBMITTED") {
-    return <Badge variant="secondary">Not Submitted</Badge>;
-  }
-  if (status === "LATE") {
-    return (
-      <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-        Late
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="border-green-200 bg-green-50 text-green-700">
-      Submitted
-    </Badge>
-  );
-}
-
-export function AllSubmissionsTable({ rows }: { rows: AllSubmissionsRow[] }) {
+export function AllSubmissionsTable({
+  rows,
+  emptyMessage = "No published coursework yet.",
+}: {
+  rows: AllSubmissionsRow[];
+  emptyMessage?: string;
+}) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -66,9 +55,7 @@ export function AllSubmissionsTable({ rows }: { rows: AllSubmissionsRow[] }) {
 
       {filtered.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          {rows.length === 0
-            ? "No published coursework yet."
-            : "No submissions match your search."}
+          {rows.length === 0 ? emptyMessage : "No submissions match your search."}
         </p>
       ) : (
         <div className="rounded-lg border border-border">
@@ -94,9 +81,13 @@ export function AllSubmissionsTable({ rows }: { rows: AllSubmissionsRow[] }) {
                   <TableCell className="text-muted-foreground">
                     {row.courseName}
                   </TableCell>
-                  <TableCell>{statusBadge(row.status)}</TableCell>
+                  <TableCell>
+                    <SubmissionStatusBadge status={row.status} />
+                  </TableCell>
                   <TableCell className="text-right">
-                    {row.submissionId ? (
+                    {!row.submissionId ? (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    ) : row.status === "RESULT_PUBLISHED" ? (
                       <Button
                         variant="outline"
                         size="sm"
@@ -109,7 +100,12 @@ export function AllSubmissionsTable({ rows }: { rows: AllSubmissionsRow[] }) {
                         View
                       </Button>
                     ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
+                      <Button
+                        size="sm"
+                        render={<Link href={`/marking/${row.submissionId}`} />}
+                      >
+                        Mark
+                      </Button>
                     )}
                   </TableCell>
                 </TableRow>

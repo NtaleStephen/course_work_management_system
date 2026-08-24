@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -15,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { deriveSubmissionStatus } from "@/lib/submission-status";
+import { SubmissionStatusBadge } from "@/components/shared/submission-status-badge";
 
 export type GroupSubmissionRow = {
   groupId: string;
@@ -23,7 +24,7 @@ export type GroupSubmissionRow = {
     id: string;
     status: "SUBMITTED" | "LATE";
     submittedAt: Date;
-    hasMark: boolean;
+    mark: { status: "SAVED" | "PUBLISHED" } | null;
   } | null;
 };
 
@@ -61,35 +62,12 @@ function StatCard({
   );
 }
 
-function statusBadge(row: GroupSubmissionRow) {
-  // Row-level status mirrors business-logic.md §14/§23's actual status
-  // values (Not Submitted/Submitted/Late/Marked/Result Published) -- not
-  // "Awaiting Mark", which is a coursework-level aggregate stat, not a
-  // per-row status. Marked/Result Published aren't reachable yet (Phase 7
-  // introduces marks); this only ever shows the first three today.
-  if (!row.submission) {
-    return <Badge variant="secondary">Not Submitted</Badge>;
-  }
-  if (row.submission.status === "LATE") {
-    return (
-      <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-        Late
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="border-green-200 bg-green-50 text-green-700">
-      Submitted
-    </Badge>
-  );
-}
-
 export function SubmissionOverview({ rows }: { rows: GroupSubmissionRow[] }) {
   const [filter, setFilter] = useState<FilterKey>("all");
 
   const counts = {
     submitted: rows.filter((r) => r.submission?.status === "SUBMITTED").length,
-    awaiting_mark: rows.filter((r) => r.submission && !r.submission.hasMark)
+    awaiting_mark: rows.filter((r) => r.submission && !r.submission.mark)
       .length,
     late: rows.filter((r) => r.submission?.status === "LATE").length,
     not_submitted: rows.filter((r) => !r.submission).length,
@@ -100,7 +78,7 @@ export function SubmissionOverview({ rows }: { rows: GroupSubmissionRow[] }) {
       case "submitted":
         return row.submission?.status === "SUBMITTED";
       case "awaiting_mark":
-        return row.submission && !row.submission.hasMark;
+        return row.submission && !row.submission.mark;
       case "late":
         return row.submission?.status === "LATE";
       case "not_submitted":
@@ -154,34 +132,50 @@ export function SubmissionOverview({ rows }: { rows: GroupSubmissionRow[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((row) => (
-              <TableRow key={row.groupId}>
-                <TableCell className="font-medium">{row.groupName}</TableCell>
-                <TableCell>{statusBadge(row)}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {row.submission
-                    ? format(row.submission.submittedAt, "d MMM yyyy, HH:mm")
-                    : "—"}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.submission ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      render={
-                        <Link
-                          href={`/lecturer/submissions/${row.submission.id}`}
-                        />
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+            {filtered.map((row) => {
+              const status = deriveSubmissionStatus(row);
+              return (
+                <TableRow key={row.groupId}>
+                  <TableCell className="font-medium">
+                    {row.groupName}
+                  </TableCell>
+                  <TableCell>
+                    <SubmissionStatusBadge status={status} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {row.submission
+                      ? format(row.submission.submittedAt, "d MMM yyyy, HH:mm")
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {!row.submission ? (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    ) : status === "RESULT_PUBLISHED" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                          <Link
+                            href={`/lecturer/submissions/${row.submission.id}`}
+                          />
+                        }
+                      >
+                        View
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        render={
+                          <Link href={`/marking/${row.submission.id}`} />
+                        }
+                      >
+                        Mark
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

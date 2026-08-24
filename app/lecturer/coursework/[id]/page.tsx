@@ -61,7 +61,7 @@ export default async function CourseworkDetailPage({
               id: latest.id,
               status: latest.status,
               submittedAt: latest.submittedAt,
-              hasMark: latest.mark !== null,
+              mark: latest.mark ? { status: latest.mark.status } : null,
             }
           : null,
       };

@@ -4,11 +4,18 @@ import { useEffect, useState } from "react";
 import mammoth from "mammoth";
 import DOMPurify from "dompurify";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 // Client-side .docx -> HTML conversion, isolated in its own component so the
 // rendering approach can be swapped later (tech-stack.md §14/§59) without
 // touching the rest of the marking flow.
-export function DocxViewer({ url }: { url: string }) {
+export function DocxViewer({
+  url,
+  className,
+}: {
+  url: string;
+  className?: string;
+}) {
   const [html, setHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,12 +48,15 @@ export function DocxViewer({ url }: { url: string }) {
   }
 
   if (html === null) {
-    return <Skeleton className="h-[80vh] w-full" />;
+    return <Skeleton className={cn("h-[80vh] w-full", className)} />;
   }
 
   return (
     <div
-      className="h-[80vh] overflow-y-auto rounded-lg border border-border bg-card p-6 text-sm text-foreground [&_em]:italic [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5"
+      className={cn(
+        "h-[80vh] overflow-y-auto rounded-lg border border-border bg-card p-6 text-sm text-foreground [&_em]:italic [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5",
+        className
+      )}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

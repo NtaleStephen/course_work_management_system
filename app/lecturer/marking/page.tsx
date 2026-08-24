@@ -6,7 +6,7 @@ import {
 } from "@/components/lecturer/all-submissions-table";
 import { deriveSubmissionStatus } from "@/lib/submission-status";
 
-export default async function LecturerSubmissionsPage() {
+export default async function LecturerMarkingQueuePage() {
   const user = await requireRole("LECTURER");
 
   const coursework = await prisma.coursework.findMany({
@@ -27,37 +27,45 @@ export default async function LecturerSubmissionsPage() {
       }
     }
 
-    return cw.assignedGroups.map((assignment) => {
+    return cw.assignedGroups.flatMap((assignment) => {
       const latest = latestByGroup.get(assignment.groupId);
-      return {
-        key: `${cw.id}-${assignment.groupId}`,
-        courseworkTitle: cw.title,
-        courseName: cw.course.name,
-        groupName: assignment.group.name,
-        status: deriveSubmissionStatus({
-          submission: latest
-            ? {
-                status: latest.status,
-                mark: latest.mark ? { status: latest.mark.status } : null,
-              }
-            : null,
-        }),
-        submissionId: latest?.id,
-      };
+      if (!latest) return [];
+
+      const status = deriveSubmissionStatus({
+        submission: {
+          status: latest.status,
+          mark: latest.mark ? { status: latest.mark.status } : null,
+        },
+      });
+      // The queue is "who still needs marking attention" (design.md §67
+      // Priority 2) -- published results have nothing left to do.
+      if (status === "RESULT_PUBLISHED") return [];
+
+      return [
+        {
+          key: `${cw.id}-${assignment.groupId}`,
+          courseworkTitle: cw.title,
+          courseName: cw.course.name,
+          groupName: assignment.group.name,
+          status,
+          submissionId: latest.id,
+        },
+      ];
     });
   });
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">
-          Submissions
-        </h1>
+        <h1 className="text-2xl font-semibold text-foreground">Marking</h1>
         <p className="text-sm text-muted-foreground">
-          Every group's submission status across your published coursework.
+          Submissions still awaiting a mark or a published result.
         </p>
       </div>
-      <AllSubmissionsTable rows={rows} />
+      <AllSubmissionsTable
+        rows={rows}
+        emptyMessage="Nothing needs marking right now."
+      />
     </div>
   );
 }
