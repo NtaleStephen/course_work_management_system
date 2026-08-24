@@ -13,10 +13,14 @@ import type { Course } from "@/lib/generated/prisma/client";
 export function CourseSelect({
   courses,
   defaultValue,
+  value,
+  onValueChange,
   triggerId,
 }: {
   courses: Course[];
   defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
   triggerId?: string;
 }) {
   // Select.Value needs Select.Root's items map to resolve a label from the
@@ -27,7 +31,13 @@ export function CourseSelect({
   );
 
   return (
-    <Select name="courseId" defaultValue={defaultValue} items={items}>
+    <Select
+      name="courseId"
+      defaultValue={defaultValue}
+      value={value}
+      onValueChange={onValueChange ? (v) => v && onValueChange(v) : undefined}
+      items={items}
+    >
       <SelectTrigger id={triggerId} className="w-full">
         <SelectValue placeholder="Select a course" />
       </SelectTrigger>
