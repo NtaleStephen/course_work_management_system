@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -10,4 +8,200 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  LECTURER
+  GROUP_LEADER
+}
+
+enum CourseworkStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  LATE
+}
+
+enum MarkStatus {
+  SAVED
+  PUBLISHED
+}
+
+// id matches the Supabase Auth user id 1:1 -- assigned by the app at account
+// creation, never generated here. Only ADMIN, LECTURER and GROUP_LEADER rows
+// exist; ordinary group members are GroupMember records, not User rows.
+model User {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  name      String
+  role      Role
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses     Course[]
+  ledGroup    Group?
+  courseworks Coursework[]
+  auditLogs   AuditLog[]
+
+  @@index([email])
+}
+
+model Course {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lecturerId String @db.Uuid
+  lecturer   User   @relation(fields: [lecturerId], references: [id])
+
+  groups      Group[]
+  courseworks Coursework[]
+
+  @@index([lecturerId])
+}
+
+model Group {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courseId String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id])
+
+  leaderId String @unique @db.Uuid
+  leader   User   @relation(fields: [leaderId], references: [id])
+
+  members          GroupMember[]
+  courseworkGroups CourseworkGroup[]
+  submissions      Submission[]
+
+  @@index([courseId])
+}
+
+// "course" here is the member's own degree programme (e.g. "BSc Computer
+// Science"), unrelated to the Course model above -- a naming collision
+// inherited directly from business-logic.md/design.md's member fields.
+model GroupMember {
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String
+  registrationNumber String
+  course             String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  groupId String @db.Uuid
+  group   Group  @relation(fields: [groupId], references: [id])
+
+  @@unique([groupId, registrationNumber])
+  @@index([groupId])
+}
+
+model Coursework {
+  id                  String           @id @default(uuid()) @db.Uuid
+  title               String
+  instructions        String
+  maxMarks            Int
+  deadline            DateTime
+  allowLateSubmission Boolean          @default(false)
+  status              CourseworkStatus @default(DRAFT)
+  createdAt           DateTime         @default(now())
+  publishedAt         DateTime?
+  updatedAt           DateTime         @updatedAt
+
+  courseId String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id])
+
+  lecturerId String @db.Uuid
+  lecturer   User   @relation(fields: [lecturerId], references: [id])
+
+  assignedGroups CourseworkGroup[]
+  submissions    Submission[]
+
+  @@index([courseId])
+  @@index([deadline])
+}
+
+// Join table: which groups a coursework was assigned to.
+model CourseworkGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now())
+
+  courseworkId String     @db.Uuid
+  coursework   Coursework @relation(fields: [courseworkId], references: [id])
+
+  groupId String @db.Uuid
+  group   Group  @relation(fields: [groupId], references: [id])
+
+  @@unique([courseworkId, groupId])
+  @@index([courseworkId])
+  @@index([groupId])
+}
+
+// One row per submission version; resubmission inserts a new row rather than
+// overwriting, so submission history is preserved (business-logic.md §13).
+model Submission {
+  id          String           @id @default(uuid()) @db.Uuid
+  fileName    String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  version     Int
+  status      SubmissionStatus
+  submittedAt DateTime         @default(now())
+
+  courseworkId String     @db.Uuid
+  coursework   Coursework @relation(fields: [courseworkId], references: [id])
+
+  groupId String @db.Uuid
+  group   Group  @relation(fields: [groupId], references: [id])
+
+  mark Mark?
+
+  @@unique([courseworkId, groupId, version])
+  @@index([courseworkId])
+  @@index([groupId])
+  @@index([submittedAt])
+}
+
+// Belongs to a Submission (not a Group directly) since a group can have
+// multiple submission versions, each independently markable (tech-stack.md §19).
+model Mark {
+  id          String     @id @default(uuid()) @db.Uuid
+  awarded     Int
+  maxMarks    Int
+  feedback    String?
+  rubricJson  Json?
+  status      MarkStatus @default(SAVED)
+  markedAt    DateTime   @default(now())
+  publishedAt DateTime?
+  updatedAt   DateTime   @updatedAt
+
+  submissionId String     @unique @db.Uuid
+  submission   Submission @relation(fields: [submissionId], references: [id])
+
+  @@index([submissionId])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  action       String
+  resourceType String
+  resourceId   String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
 }
