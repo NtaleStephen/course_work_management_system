@@ -121,64 +121,70 @@ export function SubmissionOverview({ rows }: { rows: GroupSubmissionRow[] }) {
         />
       </div>
 
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Group</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((row) => {
-              const status = deriveSubmissionStatus(row);
-              return (
-                <TableRow key={row.groupId}>
-                  <TableCell className="font-medium">
-                    {row.groupName}
-                  </TableCell>
-                  <TableCell>
-                    <SubmissionStatusBadge status={status} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {row.submission
-                      ? format(row.submission.submittedAt, "d MMM yyyy, HH:mm")
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {!row.submission ? (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    ) : status === "RESULT_PUBLISHED" ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={
-                          <Link
-                            href={`/lecturer/submissions/${row.submission.id}`}
-                          />
-                        }
-                      >
-                        View
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        render={
-                          <Link href={`/marking/${row.submission.id}`} />
-                        }
-                      >
-                        Mark
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      {filtered.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          No groups match this filter.
+        </p>
+      ) : (
+        <div className="rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Group</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((row) => {
+                const status = deriveSubmissionStatus(row);
+                return (
+                  <TableRow key={row.groupId}>
+                    <TableCell className="font-medium">
+                      {row.groupName}
+                    </TableCell>
+                    <TableCell>
+                      <SubmissionStatusBadge status={status} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.submission
+                        ? format(row.submission.submittedAt, "d MMM yyyy, HH:mm")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!row.submission ? (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      ) : status === "RESULT_PUBLISHED" ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          render={
+                            <Link
+                              href={`/lecturer/submissions/${row.submission.id}`}
+                            />
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          render={
+                            <Link href={`/marking/${row.submission.id}`} />
+                          }
+                        >
+                          Mark
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

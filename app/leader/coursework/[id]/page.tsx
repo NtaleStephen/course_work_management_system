@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import { requireRole } from "@/lib/auth/require-role";
 import { canAccessCoursework } from "@/lib/permissions";
 import { prisma } from "@/lib/db/client";
-import { Badge } from "@/components/ui/badge";
+import { deriveSubmissionStatus } from "@/lib/submission-status";
+import { SubmissionStatusBadge } from "@/components/shared/submission-status-badge";
 import { UploadSubmissionForm } from "@/components/leader/upload-submission-form";
 
 export default async function LeaderCourseworkDetailPage({
@@ -27,6 +28,7 @@ export default async function LeaderCourseworkDetailPage({
   const latestSubmission = group
     ? await prisma.submission.findFirst({
         where: { courseworkId: id, groupId: group.id },
+        include: { mark: true },
         orderBy: { version: "desc" },
       })
     : null;
@@ -70,15 +72,16 @@ export default async function LeaderCourseworkDetailPage({
                 {format(latestSubmission.submittedAt, "d MMM yyyy, HH:mm")}
               </p>
             </div>
-            {latestSubmission.status === "LATE" ? (
-              <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-                Late
-              </Badge>
-            ) : (
-              <Badge className="border-green-200 bg-green-50 text-green-700">
-                Submitted
-              </Badge>
-            )}
+            <SubmissionStatusBadge
+              status={deriveSubmissionStatus({
+                submission: {
+                  status: latestSubmission.status,
+                  mark: latestSubmission.mark
+                    ? { status: latestSubmission.mark.status }
+                    : null,
+                },
+              })}
+            />
           </div>
           <h2 className="text-sm font-medium text-muted-foreground">
             Replace Submission

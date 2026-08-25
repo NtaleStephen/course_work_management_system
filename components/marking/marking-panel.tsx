@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   saveMark,
   publishResult,
@@ -54,6 +55,19 @@ export function MarkingPanel({
 
   const isPublished = existingMark?.status === "PUBLISHED";
 
+  useEffect(() => {
+    if (saveState.ok) {
+      toast.success("Mark saved successfully.");
+    }
+  }, [saveState]);
+
+  useEffect(() => {
+    if (publishState.ok) {
+      toast.success("Result published successfully.");
+      setPublishOpen(false);
+    }
+  }, [publishState]);
+
   return (
     <div className="flex h-full flex-col gap-4 p-4">
       <div>
@@ -105,9 +119,6 @@ export function MarkingPanel({
           <Alert variant="destructive">
             <AlertDescription>{saveState.error}</AlertDescription>
           </Alert>
-        ) : null}
-        {saveState.ok ? (
-          <p className="text-sm text-green-700">Mark saved.</p>
         ) : null}
 
         <Button type="submit" disabled={savePending}>

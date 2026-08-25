@@ -189,7 +189,7 @@ export async function updateCoursework(
   redirect(`/lecturer/coursework/${id}`);
 }
 
-export type PublishState = { error?: string };
+export type PublishState = { error?: string; ok?: boolean };
 
 export async function publishCoursework(
   _prevState: PublishState,
@@ -225,5 +225,5 @@ export async function publishCoursework(
 
   revalidatePath(`/lecturer/coursework/${id}`);
   revalidatePath("/lecturer/coursework");
-  return {};
+  return { ok: true };
 }

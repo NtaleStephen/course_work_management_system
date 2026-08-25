@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,39 +93,64 @@ export function CourseworkTable({ items }: { items: CourseworkRow[] }) {
             : "No coursework matches your search."}
         </p>
       ) : (
-        <div className="rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Coursework</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/lecturer/coursework/${item.id}`}
-                      className="hover:underline"
-                    >
+        <>
+          {/* design.md §55 -- coursework tables become cards on mobile to
+              avoid horizontal scrolling on the smallest viewports. */}
+          <div className="grid gap-3 sm:hidden">
+            {filtered.map((item) => (
+              <Link key={item.id} href={`/lecturer/coursework/${item.id}`}>
+                <Card>
+                  <CardContent className="space-y-2 p-4">
+                    <p className="font-medium text-foreground">
                       {item.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {item.course.name}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {format(item.deadline, "d MMM yyyy, HH:mm")}
-                  </TableCell>
-                  <TableCell>{statusBadge(item)}</TableCell>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.course.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Due {format(item.deadline, "d MMM yyyy")}
+                    </p>
+                    {statusBadge(item)}
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          <div className="hidden rounded-lg border border-border sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Coursework</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Deadline</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/lecturer/coursework/${item.id}`}
+                        className="hover:underline"
+                      >
+                        {item.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.course.name}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(item.deadline, "d MMM yyyy, HH:mm")}
+                    </TableCell>
+                    <TableCell>{statusBadge(item)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
     </div>
   );

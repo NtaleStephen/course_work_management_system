@@ -4,7 +4,8 @@ import { requireRole } from "@/lib/auth/require-role";
 import { canMarkSubmission } from "@/lib/permissions";
 import { prisma } from "@/lib/db/client";
 import { createSubmissionSignedUrl } from "@/lib/storage/signed-url";
-import { Badge } from "@/components/ui/badge";
+import { deriveSubmissionStatus } from "@/lib/submission-status";
+import { SubmissionStatusBadge } from "@/components/shared/submission-status-badge";
 import { SubmissionDocumentViewer } from "@/components/lecturer/submission-document-viewer";
 
 export default async function SubmissionViewerPage({
@@ -17,7 +18,7 @@ export default async function SubmissionViewerPage({
 
   const submission = await prisma.submission.findUnique({
     where: { id },
-    include: { coursework: true, group: true },
+    include: { coursework: true, group: true, mark: true },
   });
 
   // canMarkSubmission is the exact ownership check needed here too --
@@ -28,6 +29,12 @@ export default async function SubmissionViewerPage({
   }
 
   const signedUrl = await createSubmissionSignedUrl(submission.filePath);
+  const status = deriveSubmissionStatus({
+    submission: {
+      status: submission.status,
+      mark: submission.mark ? { status: submission.mark.status } : null,
+    },
+  });
 
   return (
     <div className="space-y-4">
@@ -43,15 +50,7 @@ export default async function SubmissionViewerPage({
             Submitted {format(submission.submittedAt, "d MMM yyyy, HH:mm")}
           </p>
         </div>
-        {submission.status === "LATE" ? (
-          <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-            Late
-          </Badge>
-        ) : (
-          <Badge className="border-green-200 bg-green-50 text-green-700">
-            Submitted
-          </Badge>
-        )}
+        <SubmissionStatusBadge status={status} />
       </div>
 
       <SubmissionDocumentViewer url={signedUrl} mimeType={submission.mimeType} />

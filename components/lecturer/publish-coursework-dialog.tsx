@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   publishCoursework,
   type PublishState,
@@ -34,6 +35,12 @@ export function PublishCourseworkDialog({
     publishCoursework,
     initialState
   );
+
+  useEffect(() => {
+    if (state.ok) {
+      toast.success("Coursework published successfully.");
+    }
+  }, [state]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
