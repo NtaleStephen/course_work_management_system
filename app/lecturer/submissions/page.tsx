@@ -1,51 +1,23 @@
 import { requireRole } from "@/lib/auth/require-role";
-import { prisma } from "@/lib/db/client";
 import {
   AllSubmissionsTable,
   type AllSubmissionsRow,
 } from "@/components/lecturer/all-submissions-table";
-import { deriveSubmissionStatus } from "@/lib/submission-status";
+import { getLecturerSubmissionRows } from "@/lib/lecturer-submissions";
 
 export default async function LecturerSubmissionsPage() {
   const user = await requireRole("LECTURER");
 
-  const coursework = await prisma.coursework.findMany({
-    where: { lecturerId: user.id, status: "PUBLISHED" },
-    include: {
-      course: true,
-      assignedGroups: { include: { group: true } },
-      submissions: { include: { mark: true }, orderBy: { version: "desc" } },
-    },
-    orderBy: { deadline: "desc" },
-  });
+  const rows = await getLecturerSubmissionRows(user.id);
 
-  const rows: AllSubmissionsRow[] = coursework.flatMap((cw) => {
-    const latestByGroup = new Map<string, (typeof cw.submissions)[number]>();
-    for (const submission of cw.submissions) {
-      if (!latestByGroup.has(submission.groupId)) {
-        latestByGroup.set(submission.groupId, submission);
-      }
-    }
-
-    return cw.assignedGroups.map((assignment) => {
-      const latest = latestByGroup.get(assignment.groupId);
-      return {
-        key: `${cw.id}-${assignment.groupId}`,
-        courseworkTitle: cw.title,
-        courseName: cw.course.name,
-        groupName: assignment.group.name,
-        status: deriveSubmissionStatus({
-          submission: latest
-            ? {
-                status: latest.status,
-                mark: latest.mark ? { status: latest.mark.status } : null,
-              }
-            : null,
-        }),
-        submissionId: latest?.id,
-      };
-    });
-  });
+  const tableRows: AllSubmissionsRow[] = rows.map((row) => ({
+    key: `${row.courseworkId}-${row.groupId}`,
+    courseworkTitle: row.courseworkTitle,
+    courseName: row.courseName,
+    groupName: row.groupName,
+    status: row.status,
+    submissionId: row.submission?.id,
+  }));
 
   return (
     <div className="space-y-6">
@@ -54,10 +26,10 @@ export default async function LecturerSubmissionsPage() {
           Submissions
         </h1>
         <p className="text-sm text-muted-foreground">
-          Every group's submission status across your published coursework.
+          Every group&apos;s submission status across your published coursework.
         </p>
       </div>
-      <AllSubmissionsTable rows={rows} />
+      <AllSubmissionsTable rows={tableRows} />
     </div>
   );
 }

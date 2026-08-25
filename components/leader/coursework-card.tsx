@@ -1,51 +1,64 @@
 import Link from "next/link";
-import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Coursework, Submission } from "@/lib/generated/prisma/client";
-
-function statusBadge(submission: Submission | undefined) {
-  if (!submission) {
-    return <Badge variant="secondary">Not Submitted</Badge>;
-  }
-  if (submission.status === "LATE") {
-    return (
-      <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-        Late
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="border-green-200 bg-green-50 text-green-700">
-      Submitted
-    </Badge>
-  );
-}
+import { DeadlineBadge } from "@/components/shared/deadline-badge";
+import { SubmissionStatusBadge } from "@/components/shared/submission-status-badge";
+import { deriveSubmissionStatus } from "@/lib/submission-status";
+import type { Coursework, Submission, Mark } from "@/lib/generated/prisma/client";
 
 export function CourseworkCard({
   coursework,
   latestSubmission,
 }: {
   coursework: Coursework;
-  latestSubmission: Submission | undefined;
+  latestSubmission: (Submission & { mark: Mark | null }) | undefined;
 }) {
+  const status = deriveSubmissionStatus({
+    submission: latestSubmission
+      ? {
+          status: latestSubmission.status,
+          mark: latestSubmission.mark
+            ? { status: latestSubmission.mark.status }
+            : null,
+        }
+      : null,
+  });
+
   return (
     <Card>
       <CardContent className="space-y-3 p-4">
-        <div>
+        <div className="flex items-start justify-between gap-2">
           <p className="font-medium text-foreground">{coursework.title}</p>
-          <p className="text-sm text-muted-foreground">
-            Due {format(coursework.deadline, "d MMM yyyy, HH:mm")}
-          </p>
+          <DeadlineBadge deadline={coursework.deadline} />
         </div>
-        {statusBadge(latestSubmission)}
+
+        {status === "RESULT_PUBLISHED" ? (
+          <p className="text-sm font-medium text-foreground">
+            Result: {latestSubmission!.mark!.awarded}/
+            {latestSubmission!.mark!.maxMarks}
+          </p>
+        ) : (
+          <SubmissionStatusBadge status={status} />
+        )}
+
         <Button
           size="sm"
           className="w-full"
-          render={<Link href={`/leader/coursework/${coursework.id}`} />}
+          render={
+            <Link
+              href={
+                status === "RESULT_PUBLISHED"
+                  ? "/leader/results"
+                  : `/leader/coursework/${coursework.id}`
+              }
+            />
+          }
         >
-          {latestSubmission ? "View Submission" : "Submit Work"}
+          {status === "RESULT_PUBLISHED"
+            ? "View Result"
+            : latestSubmission
+              ? "View Submission"
+              : "Submit Work"}
         </Button>
       </CardContent>
     </Card>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { Coursework, Course } from "@/lib/generated/prisma/client";
 
 type CourseworkRow = Coursework & { course: Course };
@@ -31,27 +32,58 @@ function statusBadge(coursework: Coursework) {
   );
 }
 
+type TimeFilter = "all" | "current" | "past";
+
+function isPast(item: Coursework) {
+  return item.status === "PUBLISHED" && item.deadline.getTime() < Date.now();
+}
+
 export function CourseworkTable({ items }: { items: CourseworkRow[] }) {
   const [search, setSearch] = useState("");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (c) =>
+    return items.filter((c) => {
+      if (timeFilter === "current" && isPast(c)) return false;
+      if (timeFilter === "past" && !isPast(c)) return false;
+      if (!q) return true;
+      return (
         c.title.toLowerCase().includes(q) ||
         c.course.name.toLowerCase().includes(q)
-    );
-  }, [items, search]);
+      );
+    });
+  }, [items, search, timeFilter]);
 
   return (
     <div className="space-y-4">
-      <Input
-        placeholder="Search by title or course..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Search by title or course..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="flex gap-1">
+          {(
+            [
+              ["all", "All"],
+              ["current", "Current"],
+              ["past", "Past"],
+            ] as const
+          ).map(([key, label]) => (
+            <Button
+              key={key}
+              type="button"
+              size="sm"
+              variant={timeFilter === key ? "default" : "outline"}
+              onClick={() => setTimeFilter(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      </div>
 
       {filtered.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">

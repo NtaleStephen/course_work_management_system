@@ -22,6 +22,7 @@ export default async function LeaderCourseworkPage() {
         include: {
           submissions: {
             where: { groupId: group.id },
+            include: { mark: true },
             orderBy: { version: "desc" },
             take: 1,
           },
