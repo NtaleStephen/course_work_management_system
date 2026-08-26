@@ -13,25 +13,12 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CourseworkStatusBadge } from "@/components/shared/coursework-status-badge";
+import { deriveCourseworkStatus } from "@/lib/coursework-status";
 import type { Coursework, Course } from "@/lib/generated/prisma/client";
 
 type CourseworkRow = Coursework & { course: Course };
-
-function statusBadge(coursework: Coursework) {
-  if (coursework.status === "DRAFT") {
-    return <Badge variant="secondary">Draft</Badge>;
-  }
-  if (coursework.deadline.getTime() < Date.now()) {
-    return <Badge variant="secondary">Closed</Badge>;
-  }
-  return (
-    <Badge className="border-green-200 bg-green-50 text-green-700">
-      Active
-    </Badge>
-  );
-}
 
 type TimeFilter = "all" | "current" | "past";
 
@@ -110,7 +97,9 @@ export function CourseworkTable({ items }: { items: CourseworkRow[] }) {
                     <p className="text-sm text-muted-foreground">
                       Due {format(item.deadline, "d MMM yyyy")}
                     </p>
-                    {statusBadge(item)}
+                    <CourseworkStatusBadge
+                      status={deriveCourseworkStatus(item)}
+                    />
                   </CardContent>
                 </Card>
               </Link>
@@ -144,7 +133,11 @@ export function CourseworkTable({ items }: { items: CourseworkRow[] }) {
                     <TableCell className="text-muted-foreground">
                       {format(item.deadline, "d MMM yyyy, HH:mm")}
                     </TableCell>
-                    <TableCell>{statusBadge(item)}</TableCell>
+                    <TableCell>
+                      <CourseworkStatusBadge
+                        status={deriveCourseworkStatus(item)}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -65,7 +65,11 @@
   --accent-foreground: #4f46e5;
   --destructive: #dc2626;
   --border: #e2e8f0;
-  --input: #e2e8f0;
+  /* Deliberately darker than --border: an interactive field's boundary
+     needs to read clearly against the light background, while a card or
+     table divider can stay subtle (design.md §5's #E2E8F0 border color
+     works for the latter but was too low-contrast for form controls). */
+  --input: #94a3b8;
   --ring: #4f46e5;
   --chart-1: #4f46e5;
   --chart-2: #64748b;
@@ -100,7 +104,7 @@
   --accent-foreground: #c7d2fe;
   --destructive: #f87171;
   --border: #334155;
-  --input: #334155;
+  --input: #475569;
   --ring: #6366f1;
   --chart-1: #6366f1;
   --chart-2: #94a3b8;
