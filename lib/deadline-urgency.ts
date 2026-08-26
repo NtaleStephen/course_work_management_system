@@ -15,3 +15,14 @@ export function getDeadlineUrgency(
   if (days === 1) return "due-tomorrow";
   return "normal";
 }
+
+// The actual business rule for whether a submission is late (business-logic.md
+// §15) -- exact-timestamp, not calendar-day like getDeadlineUrgency above.
+// A submission at the exact deadline instant is on time (strictly after,
+// not at-or-after, counts as late).
+export function isSubmissionLate(
+  deadline: Date,
+  now: Date = new Date()
+): boolean {
+  return now.getTime() > deadline.getTime();
+}

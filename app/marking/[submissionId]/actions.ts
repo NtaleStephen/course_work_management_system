@@ -5,7 +5,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { canMarkSubmission } from "@/lib/permissions";
 import { prisma } from "@/lib/db/client";
 import { recordAudit } from "@/lib/audit/log";
-import { saveMarkSchema } from "@/lib/validation/mark";
+import { isValidMark, saveMarkSchema } from "@/lib/validation/mark";
 
 export type MarkActionState = { error?: string; ok?: boolean };
 
@@ -41,9 +41,9 @@ export async function saveMark(
     include: { coursework: true, mark: true },
   });
 
-  if (awarded > submission.coursework.maxMarks) {
+  if (!isValidMark(awarded, submission.coursework.maxMarks)) {
     return {
-      error: `Mark cannot exceed the maximum of ${submission.coursework.maxMarks}.`,
+      error: `Mark must be between 0 and ${submission.coursework.maxMarks}.`,
     };
   }
 

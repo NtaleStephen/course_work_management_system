@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { canAccessCoursework } from "@/lib/permissions";
 import { prisma } from "@/lib/db/client";
 import { recordAudit } from "@/lib/audit/log";
+import { isSubmissionLate } from "@/lib/deadline-urgency";
 import { uploadSubmissionSchema } from "@/lib/validation/submission";
 import {
   MAX_SUBMISSION_SIZE_BYTES,
@@ -65,7 +66,7 @@ export async function uploadSubmission(
     return { error: "Maximum file size exceeded." };
   }
 
-  const isLate = Date.now() > coursework.deadline.getTime();
+  const isLate = isSubmissionLate(coursework.deadline);
   if (isLate && !coursework.allowLateSubmission) {
     return { error: "The coursework deadline has passed." };
   }
