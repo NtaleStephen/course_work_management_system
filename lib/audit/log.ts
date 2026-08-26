@@ -26,6 +26,7 @@ export const AUDIT_ACTIONS = [
   "AWARD_MARK",
   "UPDATE_MARK",
   "PUBLISH_RESULT",
+  "CHANGE_PASSWORD",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

@@ -44,6 +44,7 @@ export const LECTURER_NAV_ITEMS: NavItem[] = [
   { label: "Marking", href: "/lecturer/marking", icon: CheckSquare },
   { label: "Results", href: "/lecturer/results", icon: Award },
   { label: "Groups", href: "/lecturer/groups", icon: Users },
+  { label: "Settings", href: "/lecturer/settings", icon: Settings },
 ];
 
 export const LEADER_NAV_ITEMS: NavItem[] = [
